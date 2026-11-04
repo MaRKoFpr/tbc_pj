@@ -1,0 +1,26 @@
+__pycache__/
+*.py[cod]
+.uv-cache/
+.venv/
+.ipynb_checkpoints/
+.env
+*.zip
+*.tmp
+/Долгопрудный_материалы_команде/
+/osm_data/cache/
+/osm_data/roads_source.osm
+/osm_data/cemetery_south.osm
+/osm_data/forest_park.osm
+/Неделя 8*.html
+/Транскрипция*.txt
+/План_предзащиты.md
+/zones_draft.*
+/build_zones.py
+/flows.csv
+/Проект_Долгопрудный.ipynb
+/area.csv
+/points.csv
+/calibration.csv
+/flows_template.csv
+/osm_map.html
+/osm_map_wide.html

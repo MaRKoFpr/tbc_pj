@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Макромодель Долгопрудного · материалы для команды</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f4f6f5;color:#192f2c;font:16px/1.55 system-ui,sans-serif}
+main{max-width:1000px;margin:auto;padding:36px 22px 60px}header{background:#183f38;color:#fff;padding:clamp(24px,5vw,52px);border-radius:20px}
+.eyebrow{color:#bde4d8;text-transform:uppercase;letter-spacing:.1em;font-size:.78rem;font-weight:700}
+h1{font-size:clamp(2rem,5vw,3.5rem);line-height:1.08;margin:.4em 0 .3em}h2{margin:1.5em 0 .6em;font-size:1.45rem}
+h3{margin:.1em 0 .4em;font-size:1.08rem}p{margin:.35em 0 1em}p:last-child{margin-bottom:0}
+header p{max-width:680px;color:#e4f0ed}a{color:#155e51;text-underline-offset:3px}a:focus-visible{outline:2px solid #b84d28;outline-offset:4px}
+.button{display:inline-block;margin-top:14px;padding:9px 15px;background:#e0f5ed;color:#173d35;border-radius:8px;font-weight:700;text-decoration:none}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,235px),1fr));gap:12px}
+article{background:#fff;padding:17px;border:1px solid #dae4df;border-radius:12px}
+aside{margin-top:20px;border-left:4px solid #b97a3f;background:#fff8ef;padding:12px 17px}
+code{overflow-wrap:anywhere}ul{padding-left:20px}
+</style>
+</head>
+<body>
+<main>
+<header>
+<div class="eyebrow">Транспорт большого города · подготовка к предзащите</div>
+<h1>Макромодель Долгопрудного</h1>
+<p>Рабочие материалы команды. Зафиксировали семь внутренних зон, выгрузили OpenStreetMap и проверили вычислительное ядро на условной сети. Теперь собираем первый прогноз по городу.</p>
+<a class="button" href="project_boundary_map.html">Открыть карту районирования →</a>
+</header>
+<aside><strong>Статус сборки.</strong> Городского <code>flows.csv</code> пока нет. Для расчёта нужны параметры рёбер, узлы подключения зон, привязки 30 направлений и оценки спроса на четыре получаса.</aside>
+
+<h2>Что уже собрано</h2>
+<div class="grid">
+<article><h3>Районирование</h3><p>Семь внутренних зон. Парк и Центральный объединены, МФТИ и студгородок выделены отдельно. На карте можно переключить схемы для сравнения.</p><a href="zones_primary.geojson">Основная схема в GeoJSON</a></article>
+<article><h3>Дорожная сеть</h3><p>Снимки OSM, здания и рабочий граф для подготовки маршрутов. Обзорная карта показывает сеть и места измерений.</p><a href="osm_data/roads.graphml">GraphML</a></article>
+<article><h3>Расчёт и ТЗ</h3><p>Ядро строит матрицу поездок, распределяет поток по дорогам и выгружает результат по шаблону курса.</p><a href="Запуск_MVP.md">Как запустить</a></article>
+</div>
+
+<h2>Что берём в работу</h2>
+<div class="grid">
+<article><h3>Районирование</h3><p>Отметить подъезды к семи зонам. Начать с Водников, ДНПП, кампуса и лицея. Помочь подтвердить три внешних коридора.</p></article>
+<article><h3>Сеть</h3><p>Подготовить направленные рёбра и параметры дорог. Привязать сначала четыре открытых направления замеров, затем остальные 26.</p></article>
+<article><h3>Спрос</h3><p>Подготовить отправления и прибытия по зонам и воротам на четыре получаса. Записать источники, единицы и допущения.</p></article>
+<article><h3>Лид</h3><p>Собрать <code>model_input.json</code>, проверить маршруты, сохранить первый прогон и сравнить его с открытыми камерами.</p></article>
+</div>
+
+<h2>Порядок сборки</h2>
+<p>Граф → подключения зон и створов → спрос и OD-матрицы → распределение поездок → <code>flows.csv</code> → сравнение с камерами.</p>
+<ul>
+<li><a href="Чек-лист_макромодели.md">Подробный чек-лист</a> — шаги, результаты и критерии проверки.</li>
+<li>Скачайте из материалов задания <code>area.csv</code>, <code>points.csv</code>, <code>calibration.csv</code> и <code>flows_template.csv</code> и положите в корень репозитория.</li>
+
+</ul>
+<p>Для обычной подложки интерактивной карты нужен интернет.</p>
+</main>
+</body>
+</html>
