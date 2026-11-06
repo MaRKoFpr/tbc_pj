@@ -5,18 +5,18 @@ import json
 from shapely.geometry import Polygon, mapping, shape
 from shapely.ops import unary_union
 
-from download_osm import ROOT, read_boundary
+from ..road_network.download_osm import INPUT_DIR, PROCESSED_DIR, read_boundary
 
 
 def main():
-    path = ROOT / "zones_manual.geojson"
+    path = PROCESSED_DIR / "zones_manual.geojson"
     data = json.loads(path.read_text(encoding="utf-8-sig"))
     features = [f for f in data["features"] if f["properties"]["zone_id"] not in {"Z05", "Z06", "Z07"}]
     park = next(f for f in features if f["properties"]["zone_id"] == "Z02")
     park_ring = park["geometry"]["coordinates"][0]
     northwest = park_ring[0]
     northern_edge = park_ring[:6]
-    boundary = read_boundary(ROOT / "area.csv").iloc[0]
+    boundary = read_boundary(INPUT_DIR / "area.csv").iloc[0]
     remaining = boundary.difference(unary_union([shape(f["geometry"]) for f in features]))
     west = Polygon([
         (37.47, northwest[1]), northwest, *park_ring[16:19][::-1],

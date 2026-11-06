@@ -10,13 +10,13 @@ from html import escape
 import geopandas as gpd
 from shapely.geometry import LineString
 
-from download_osm import ROOT
+from ..road_network.download_osm import INPUT_DIR, OSM_DIR, OUTPUT_DIR
 
-DATA = ROOT / "osm_data"
+DATA = OSM_DIR
 
 
 def rows(name):
-    with (ROOT / name).open(encoding="utf-8-sig", newline="") as stream:
+    with (INPUT_DIR / name).open(encoding="utf-8-sig", newline="") as stream:
         return list(csv.DictReader(stream))
 
 
@@ -203,7 +203,8 @@ for (const control of document.querySelectorAll("[data-layer]")) {{
 </script></html>
 """
     name = "zones_draft.html" if args.zones else "osm_map_wide.html" if args.snapshot else "osm_map.html"
-    output = ROOT / name
+    OUTPUT_DIR.mkdir(exist_ok=True)
+    output = OUTPUT_DIR / name
     output.write_text(document, encoding="utf-8")
     print(f"{output.name}: {len(roads)} edges, {len(buildings)} buildings, "
           f"{len(destinations)} destinations, {len(sites)} sites")

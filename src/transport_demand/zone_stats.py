@@ -1,9 +1,12 @@
 import geopandas as gpd
 import pandas as pd
+from pathlib import Path
 
 # ---------------- НАСТРОЙКИ ----------------
-ZONES_FILE = "zones_primary.geojson"
-FEATURES_FILE = "osm_data/features.geojson"
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+PROCESSED_DIR = PROJECT_ROOT / "data" / "processed"
+ZONES_FILE = PROCESSED_DIR / "zones_primary.geojson"
+FEATURES_FILE = PROJECT_ROOT / "data" / "osm" / "features.geojson"
 ZONE_COLUMN = "zone_id"
 DEFAULT_LEVELS = 5        # этажность, если в OSM её нет
 POINT_FLOOR_M2 = 0        # условная площадь точки-магазина/офиса; 0 = не добавлять в долю
@@ -98,5 +101,5 @@ table = table[["res_buildings", "res_floor_m2", "res_share", "work_buildings",
                "work_floor_m2", "work_points", "work_share", "unclassified_buildings"]]
 table = table.round({"res_floor_m2": 0, "work_floor_m2": 0, "res_share": 4, "work_share": 4})
 table.index.name = "zone"
-table.to_csv("zone_stats.csv")
+table.to_csv(PROCESSED_DIR / "zone_stats.csv")
 print(table)

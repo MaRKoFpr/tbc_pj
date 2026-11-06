@@ -6,16 +6,16 @@ from xml.etree import ElementTree as ET
 from shapely.geometry import LineString, Point, mapping, shape
 from shapely.ops import linemerge, split
 
-from download_osm import ROOT, read_boundary
+from ..road_network.download_osm import INPUT_DIR, OSM_DIR, PROCESSED_DIR, read_boundary
 
 
 def main():
-    path = ROOT / "zones_manual.geojson"
+    path = PROCESSED_DIR / "zones_manual.geojson"
     saved = json.loads(path.read_text(encoding="utf-8-sig"))
     features = saved["features"] if saved["type"] == "FeatureCollection" else [saved]
     features = [feature for feature in features if feature["properties"]["zone_id"] != "Z01"]
-    boundary = read_boundary(ROOT / "area.csv").iloc[0]
-    snapshot = ET.parse(ROOT / "osm_data" / "dolgoprudny_wide.osm").getroot()
+    boundary = read_boundary(INPUT_DIR / "area.csv").iloc[0]
+    snapshot = ET.parse(OSM_DIR / "dolgoprudny_wide.osm").getroot()
     nodes = {node.get("id"): (float(node.get("lon")), float(node.get("lat")))
              for node in snapshot.iterfind("node")}
     river = linemerge([

@@ -5,6 +5,12 @@
 """
 import csv
 import json
+from pathlib import Path
+
+
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+INPUT_DIR = PROJECT_ROOT / "data" / "input"
+PROCESSED_DIR = PROJECT_ROOT / "data" / "processed"
 
 
 
@@ -26,13 +32,13 @@ GATEWAYS = {
 
 # 1. Читаем замеры: calibration[точка] = [поток 07-08, поток 08-09]
 calibration = {}
-with open("calibration.csv", encoding="utf-8-sig") as f:
+with (INPUT_DIR / "calibration.csv").open(encoding="utf-8-sig") as f:
     for row in csv.DictReader(f):
         calibration[row["id"]] = [float(row["07:00-08:00"]), float(row["08:00-09:00"])]
 
 # 2. Читаем доли зон: (зона, доля жителей, доля рабочих мест)
 zones = []
-with open("zone_stats.csv", encoding="utf-8-sig") as f:
+with (PROCESSED_DIR / "zone_stats.csv").open(encoding="utf-8-sig") as f:
     for row in csv.DictReader(f):
         zones.append((row["zone"], float(row["res_share"]), float(row["work_share"])))
 
@@ -86,7 +92,7 @@ for name, hour in half_hours:
     periods[name] = {"departures": departures, "arrivals": arrivals}
 
 # 4. Сохраняем и проверяем баланс (суммы должны почти совпадать)
-with open("periods.json", "w", encoding="utf-8") as f:
+with (PROCESSED_DIR / "periods.json").open("w", encoding="utf-8") as f:
     json.dump(periods, f, ensure_ascii=False, indent=2)
 
 print("Готово: periods.json")

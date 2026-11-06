@@ -6,7 +6,7 @@ import osmnx as ox
 from shapely.geometry import Point, Polygon, mapping, shape
 from shapely.ops import unary_union
 
-from download_osm import ROOT, read_boundary
+from ..road_network.download_osm import INPUT_DIR, OSM_DIR, PROCESSED_DIR, read_boundary
 
 
 def feature(zone_id, name, geometry):
@@ -28,13 +28,13 @@ def save(path, value):
 
 
 def main():
-    path = ROOT / "zones_manual.geojson"
+    path = PROCESSED_DIR / "zones_manual.geojson"
     original = json.loads(path.read_text(encoding="utf-8-sig"))["features"]
     zones = {f["properties"]["zone_id"]: f for f in original if f["properties"]["zone_id"] != "Z08"}
     geometries = {key: shape(f["geometry"]) for key, f in zones.items()}
-    boundary = read_boundary(ROOT / "area.csv").iloc[0]
+    boundary = read_boundary(INPUT_DIR / "area.csv").iloc[0]
     places = ox.features.features_from_xml(
-        ROOT / "osm_data" / "dolgoprudny_wide.osm",
+        OSM_DIR / "dolgoprudny_wide.osm",
         tags={"name": "Московский физико-технический институт"},
     )
     campus = places.loc[("relation", 4262145)].geometry.intersection(boundary)
@@ -107,8 +107,8 @@ def main():
         variants[key] = collection(list(layout.values()))
         print(f"{key}: {len(polygons)} zones")
     save(path, variants["manual"])
-    save(ROOT / "zoning_variants.json", variants)
-    save(ROOT / "zones_primary.geojson", variants["grouped"])
+    save(PROCESSED_DIR / "zoning_variants.json", variants)
+    save(PROCESSED_DIR / "zones_primary.geojson", variants["grouped"])
 
 
 if __name__ == "__main__":

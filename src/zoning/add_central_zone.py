@@ -4,11 +4,11 @@ import json
 
 from shapely.geometry import Polygon, mapping, shape
 
-from download_osm import ROOT, read_boundary
+from ..road_network.download_osm import INPUT_DIR, PROCESSED_DIR, read_boundary
 
 
 def main():
-    path = ROOT / "zones_manual.geojson"
+    path = PROCESSED_DIR / "zones_manual.geojson"
     collection = json.loads(path.read_text(encoding="utf-8-sig"))
     features = [feature for feature in collection["features"]
                 if feature["properties"]["zone_id"] != "Z03"]
@@ -27,7 +27,7 @@ def main():
         (37.4954792, 55.9308088), (37.4931469, 55.9307897),
         (37.49295, 55.9335), (37.49236, 55.9358),
     ])
-    boundary = read_boundary(ROOT / "area.csv").iloc[0]
+    boundary = read_boundary(INPUT_DIR / "area.csv").iloc[0]
     if not central.is_valid or not boundary.covers(central):
         raise ValueError("Z03 must be a valid polygon inside the project")
     if any(central.intersection(shape(feature["geometry"])).area > 1e-12 for feature in features):
