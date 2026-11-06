@@ -10,7 +10,11 @@ import networkx as nx
 import osmnx as ox
 from shapely.geometry import Point, Polygon
 
-ROOT = Path(__file__).resolve().parent
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+INPUT_DIR = PROJECT_ROOT / "data" / "input"
+OSM_DIR = PROJECT_ROOT / "data" / "osm"
+PROCESSED_DIR = PROJECT_ROOT / "data" / "processed"
+OUTPUT_DIR = PROJECT_ROOT / "outputs"
 
 
 def read_boundary(path):
@@ -63,10 +67,10 @@ def main():
     if not 0 <= args.buffer_m < float("inf"):
         parser.error("--buffer-m должен быть конечным и неотрицательным")
 
-    boundary = read_boundary(ROOT / "area.csv")
+    boundary = read_boundary(INPUT_DIR / "area.csv")
     metric_crs = boundary.estimate_utm_crs()
     road_area = boundary.to_crs(metric_crs).buffer(args.buffer_m).to_crs(boundary.crs).iloc[0]
-    output = ROOT / "osm_data"
+    output = OSM_DIR
     output.mkdir(exist_ok=True)
     ox.settings.cache_folder = output / "cache"
     ox.settings.use_cache = True

@@ -1,4 +1,4 @@
-"""Автомобильный MVP. Запуск: python model.py model_input.json."""
+"""Автомобильный MVP. Запуск: python -m src.model data/processed/model_input.json."""
 
 import csv
 import json
@@ -8,7 +8,9 @@ from collections import defaultdict
 from heapq import heappop, heappush
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+INPUT_DIR = PROJECT_ROOT / "data" / "input"
+OUTPUT_DIR = PROJECT_ROOT / "outputs"
 
 
 def shortest_paths(start, adjacency, costs):
@@ -142,7 +144,7 @@ def run(data, output):
     edge_index = {edge["id"]: index for index, edge in enumerate(network.edges)}
     if len(edge_index) != len(network.edges):
         raise ValueError("ID рёбер должны быть уникальны")
-    with (ROOT / "flows_template.csv").open(encoding="utf-8-sig", newline="") as stream:
+    with (INPUT_DIR / "flows_template.csv").open(encoding="utf-8-sig", newline="") as stream:
         reader = csv.DictReader(stream)
         columns = reader.fieldnames
         rows = list(reader)
@@ -164,4 +166,5 @@ def run(data, output):
 
 if __name__ == "__main__":
     path = Path(sys.argv[1])
-    run(json.loads(path.read_text(encoding="utf-8-sig")), ROOT / "flows.csv")
+    OUTPUT_DIR.mkdir(exist_ok=True)
+    run(json.loads(path.read_text(encoding="utf-8-sig")), OUTPUT_DIR / "flows.csv")

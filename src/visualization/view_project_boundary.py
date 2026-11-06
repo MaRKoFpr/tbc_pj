@@ -6,7 +6,10 @@ import json
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+INPUT_DIR = PROJECT_ROOT / "data" / "input"
+PROCESSED_DIR = PROJECT_ROOT / "data" / "processed"
+OUTPUT_DIR = PROJECT_ROOT / "outputs"
 
 HTML = """<!doctype html>
 <html lang="ru">
@@ -95,18 +98,19 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--export-only", action="store_true")
     args = parser.parse_args()
-    with (ROOT / "area.csv").open(encoding="utf-8-sig", newline="") as stream:
+    with (INPUT_DIR / "area.csv").open(encoding="utf-8-sig", newline="") as stream:
         rows = sorted(csv.DictReader(stream), key=lambda row: int(row["номер"]))
     boundary = [[float(row["широта"]), float(row["долгота"])] for row in rows]
-    zones_path = ROOT / "zones_manual.geojson"
+    zones_path = PROCESSED_DIR / "zones_manual.geojson"
     zones = json.loads(zones_path.read_text(encoding="utf-8-sig")) if zones_path.exists() else None
-    variants_path = ROOT / "zoning_variants.json"
+    variants_path = PROCESSED_DIR / "zoning_variants.json"
     variants = json.loads(variants_path.read_text(encoding="utf-8")) if variants_path.exists() else {}
     variants["manual"] = zones
     page = (HTML.replace("__BOUNDARY__", json.dumps(boundary))
             .replace("__ZONING_VARIANTS__", json.dumps(variants)).encode("utf-8"))
 
-    (ROOT / "project_boundary_map.html").write_bytes(page)
+    OUTPUT_DIR.mkdir(exist_ok=True)
+    (OUTPUT_DIR / "project_boundary_map.html").write_bytes(page)
     if args.export_only:
         return
 

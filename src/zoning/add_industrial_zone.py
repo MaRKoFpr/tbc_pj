@@ -6,11 +6,11 @@ import osmnx as ox
 from shapely.geometry import Polygon, mapping, shape
 from shapely.ops import unary_union
 
-from download_osm import ROOT, read_boundary
+from ..road_network.download_osm import INPUT_DIR, OSM_DIR, PROCESSED_DIR, read_boundary
 
 
 def main():
-    path = ROOT / "zones_manual.geojson"
+    path = PROCESSED_DIR / "zones_manual.geojson"
     data = json.loads(path.read_text(encoding="utf-8-sig"))
     features = [f for f in data["features"] if f["properties"]["zone_id"] != "Z04"]
     central = next(f for f in features if f["properties"]["zone_id"] == "Z03")
@@ -32,9 +32,9 @@ def main():
     ])
     if not outline.is_valid:
         raise ValueError("Invalid Z04 draft outline")
-    boundary = read_boundary(ROOT / "area.csv").iloc[0]
+    boundary = read_boundary(INPUT_DIR / "area.csv").iloc[0]
     places = ox.features.features_from_xml(
-        ROOT / "osm_data" / "dolgoprudny_wide.osm",
+        OSM_DIR / "dolgoprudny_wide.osm",
         tags={"name": ["Московский физико-технический институт",
                        "Долгопрудненское научно-производственное предприятие"]},
     )
