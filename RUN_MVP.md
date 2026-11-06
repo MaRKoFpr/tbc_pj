@@ -1,6 +1,8 @@
 # Как запустить MVP
 
-Команда `python model.py model_input.json` читает входной JSON и записывает `flows.csv` рядом с кодом. Используется стандартная библиотека Python.
+Сначала установите зафиксированные зависимости командой `uv sync --locked`.
+Команда `uv run python model.py model_input.json` читает входной JSON и записывает
+`flows.csv` рядом с кодом. Само ядро модели использует стандартную библиотеку Python.
 
 | Ключ JSON | Содержимое |
 |---|---|
@@ -18,8 +20,8 @@
 Из папки проекта, чтобы скачать новый снимок и обработать его:
 
 ```powershell
-uv run --with osmnx python fetch_osm_snapshot.py
-uv run --with osmnx python download_osm.py --osm-file osm_data/dolgoprudny.osm
+uv run python fetch_osm_snapshot.py
+uv run python download_osm.py --osm-file osm_data/dolgoprudny.osm
 ```
 
 Снимок уже сохранён в `osm_data/dolgoprudny.osm`. Для повторной обработки можно начать со второй команды. Запуск `download_osm.py` без `--osm-file` запрашивает данные через Overpass.
@@ -27,7 +29,7 @@ uv run --with osmnx python download_osm.py --osm-file osm_data/dolgoprudny.osm
 Чтобы пересобрать обзорную карту из готовых файлов:
 
 ```powershell
-uv run --with osmnx python build_osm_map.py
+uv run python build_osm_map.py
 ```
 
 Откройте `osm_map.html` в браузере. Переключатели управляют слоями, щелчок по створу открывает список направлений и доступные часовые замеры. Координаты створов взяты из задания. Привязка к направленным рёбрам выполняется отдельным этапом.
@@ -35,8 +37,8 @@ uv run --with osmnx python build_osm_map.py
 ## Контрольная карта широкого прямоугольника
 
 ```powershell
-uv run --with osmnx python fetch_osm_snapshot.py --buffer-m 1000 --grid 5 --output osm_data/dolgoprudny_wide.osm
-uv run --with osmnx python build_osm_map.py --snapshot osm_data/dolgoprudny_wide.osm
+uv run python fetch_osm_snapshot.py --buffer-m 1000 --grid 5 --output osm_data/dolgoprudny_wide.osm
+uv run python build_osm_map.py --snapshot osm_data/dolgoprudny_wide.osm
 ```
 
 Откройте `osm_map_wide.html`. Слои OSM показывают исходные линии по тегу `highway`, включая служебные проезды и дорожки. Слой автомобильной сети показывает граф MVP поверх этих линий. Объединение 25 запросов по ID сохраняет линии на стыках участков. За пределами прямоугольника покрытие не гарантируется.
@@ -44,7 +46,7 @@ uv run --with osmnx python build_osm_map.py --snapshot osm_data/dolgoprudny_wide
 Проверка полноты линий по ссылкам на узлы:
 
 ```powershell
-python audit_osm_snapshot.py osm_data/dolgoprudny_wide.osm
+uv run python audit_osm_snapshot.py osm_data/dolgoprudny_wide.osm
 ```
 
 В широком снимке 7008 линий с тегом `highway`, у всех есть все узлы из их последовательностей. Эта проверка выявляет потерянные узлы внутри выгруженной линии. Для независимого снимка параметр `--compare` дополнительно сравнивает последовательности узлов по общим ID.
