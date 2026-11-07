@@ -11,18 +11,18 @@ ZONE_COLUMN = "zone_id"
 DEFAULT_LEVELS = 5        # этажность, если в OSM её нет
 POINT_FLOOR_M2 = 0        # условная площадь точки-магазина/офиса; 0 = не добавлять в долю
 
-# что считаем жильём и работой (по тегу building)
+
 RES = ["apartments", "residential", "house", "detached", "semidetached_house",
        "terrace", "dormitory", "bungalow"]
 WORK = ["office", "commercial", "retail", "industrial", "warehouse", "supermarket",
         "school", "university", "college", "kindergarten", "hospital", "civic",
         "public", "government", "manufacture", "hotel"]
 
-# точки (магазины, аптеки и т.п.) считаем работой, если amenity из этого списка
+
 JOB_AMENITY = ["school", "university", "college", "kindergarten", "hospital", "clinic",
                "dentist", "doctors", "pharmacy", "cafe", "restaurant", "fast_food",
                "bank", "post_office", "townhall", "library", "cinema", "fuel"]
-# здания, которые не жильё и не работа (не считаем «неопознанными»)
+
 IGNORE = ["garages", "garage", "roof", "shed", "service", "kiosk", "hut", "cabin",
           "carport", "construction", "transformer_tower"]
 
@@ -33,37 +33,32 @@ feats = gpd.read_file(FEATURES_FILE).reset_index(drop=True)
 zones = zones[[ZONE_COLUMN, "geometry"]].rename(columns={ZONE_COLUMN: "zone"})
 zones["zone"] = zones["zone"].astype(str)
 
-# Нужные теги; если какого-то нет в файле, делаем пустую колонку
 for tag in ["building", "amenity", "office", "shop", "building:levels"]:
     if tag not in feats.columns:
         feats[tag] = None
 feats = feats[["building", "amenity", "office", "shop", "building:levels", "geometry"]]
 
-# Переводим в метры, чтобы считать площади
 metric_crs = zones.estimate_utm_crs()
 zones = zones.to_crs(metric_crs)
 feats = feats.to_crs(metric_crs)
 
-# ---------------- 2. Здания (полигоны) ----------------
+
 buildings = feats[feats.geom_type.isin(["Polygon", "MultiPolygon"])].copy()
 
-# Тип: жильё (res) или работа (work). Жильё важнее.
 buildings["kind"] = None
 is_work = (buildings["building"].isin(WORK) | buildings["amenity"].isin(JOB_AMENITY)
            | buildings["office"].notna() | buildings["shop"].notna())
 buildings.loc[is_work, "kind"] = "work"
 buildings.loc[buildings["building"].isin(RES), "kind"] = "res"
 
-# Площадь по этажам = площадь застройки * этажность
+
 levels = pd.to_numeric(buildings["building:levels"], errors="coerce")
 print("Зданий с известной этажностью:", int(levels.notna().sum()), "из", len(buildings))
 buildings["floor_m2"] = buildings.geometry.area * levels.fillna(DEFAULT_LEVELS)
 
-# Здания с тегом building, которые мы не смогли отнести ни к жилью, ни к работе
 unclassified = buildings[buildings["kind"].isna() & buildings["building"].notna()
                          & ~buildings["building"].isin(IGNORE)]
 
-# Привязка к зоне: берём точку внутри объекта и смотрим, в какую зону она попала
 def to_zone(gdf):
     gdf = gdf.copy()
     gdf.geometry = gdf.geometry.representative_point()
