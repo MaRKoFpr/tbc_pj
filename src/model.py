@@ -159,7 +159,7 @@ def run(data, output):
                 raise ValueError(f"Некорректная привязка {row['id']}")
             row[period] = round(2 * sum(flows[edge_index[edge]] for edge in edges), 3)
     with output.open("w", encoding="utf-8", newline="") as stream:
-        writer = csv.DictWriter(stream, fieldnames=columns)
+        writer = csv.DictWriter(stream, fieldnames=columns, lineterminator="\n")
         writer.writeheader()
         writer.writerows(rows)
 

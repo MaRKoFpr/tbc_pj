@@ -1,84 +1,85 @@
-"""
-Считает, сколько машин отправляется и прибывает в каждой зоне
-за каждые полчаса. Результат пишется в periods.json (блок `periods` для model.py).
+"""Предварительный спрос в машинах за получас."""
 
-"""
 import csv
 import json
+import math
 from pathlib import Path
-
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 INPUT_DIR = PROJECT_ROOT / "data" / "input"
 PROCESSED_DIR = PROJECT_ROOT / "data" / "processed"
 
-
-# ЗАГЛУШКА: подбирается калибровкой.
+# Заглушки для первого запуска, дальше подбираются калибровкой.
 INTERNAL_TRIPS = {"07:00-08:00": 4000, "08:00-09:00": 4000}
-# Первое число - час 07-08, второе - час 08-09.
-# Для EXT_P02 числа взяты из calibration.csv (точки P02A и P02B).
-# Для EXT_P03 и EXT_P06 чисел нет, поэтому ЗАГЛУШКА
 GATEWAYS = {
-    "EXT_P02": {"OUT": "P02A", "IN": "P02B"},        # берём из calibration.csv
+    "EXT_P02": {"OUT": "P02A", "IN": "P02B"},
     "EXT_P03": {"OUT": [956, 1042], "IN": [400, 563]},
     "EXT_P06": {"OUT": [956, 1042], "IN": [400, 563]},
 }
+HALF_HOURS = [("07:00", 0), ("07:30", 0), ("08:00", 1), ("08:30", 1)]
+HOURS = ["07:00-08:00", "08:00-09:00"]
 
-calibration = {}
-with (INPUT_DIR / "calibration.csv").open(encoding="utf-8-sig") as f:
-    for row in csv.DictReader(f):
-        calibration[row["id"]] = [float(row["07:00-08:00"]), float(row["08:00-09:00"])]
 
-zones = []
-with (PROCESSED_DIR / "zone_stats.csv").open(encoding="utf-8-sig") as f:
-    for row in csv.DictReader(f):
-        zones.append((row["zone"], float(row["res_share"]), float(row["work_share"])))
+def build_periods(stats_path=None, calibration_path=None):
+    stats_path = stats_path or PROCESSED_DIR / "zone_stats.csv"
+    calibration_path = calibration_path or INPUT_DIR / "calibration.csv"
+    with calibration_path.open(encoding="utf-8-sig", newline="") as stream:
+        calibration = {
+            row["id"]: [float(row[hour]) for hour in HOURS]
+            for row in csv.DictReader(stream)
+        }
+    with stats_path.open(encoding="utf-8-sig", newline="") as stream:
+        zones = [(row["zone"], float(row["res_share"]), float(row["work_share"]))
+                 for row in csv.DictReader(stream)]
+    if not zones or len({zone for zone, _, _ in zones}) != len(zones):
+        raise ValueError("Нужны непустые уникальные зоны")
+    shares = [value for _, res, work in zones for value in (res, work)]
+    if any(not math.isfinite(x) or x < 0 for x in shares):
+        raise ValueError("Доли зон должны быть конечными и неотрицательными")
+    sum_res = math.fsum(res for _, res, _ in zones)
+    sum_work = math.fsum(work for _, _, work in zones)
+    if not sum_res or not sum_work:
+        raise ValueError("Нужны положительные суммы жилых и рабочих весов")
 
-# чтобы доли в сумме давали ровно 1
-sum_res = sum(z[1] for z in zones)
-sum_work = sum(z[2] for z in zones)
+    periods = {}
+    for name, hour in HALF_HOURS:
+        internal = INTERNAL_TRIPS[HOURS[hour]] / 2
+        departures, arrivals = {}, {}
+        for gate, flows in GATEWAYS.items():
+            out_flow, in_flow = flows["OUT"], flows["IN"]
+            out_flow = calibration[out_flow] if isinstance(out_flow, str) else out_flow
+            in_flow = calibration[in_flow] if isinstance(in_flow, str) else in_flow
+            departures[gate] = in_flow[hour] / 2
+            arrivals[gate] = out_flow[hour] / 2
 
-half_hours = [("07:00", 0), ("07:30", 0), ("08:00", 1), ("08:30", 1)]
-hour_names = ["07:00-08:00", "08:00-09:00"]
+        total_departures = internal + math.fsum(arrivals.values())
+        total_arrivals = internal + math.fsum(departures.values())
+        for zone, res, work in zones:
+            departures[zone] = total_departures * res / sum_res
+            arrivals[zone] = total_arrivals * work / sum_work
 
-periods = {}
-for name, hour in half_hours:
-    def half(value_per_hour):
-        return value_per_hour / 2
-    
-    internal = half(INTERNAL_TRIPS[hour_names[hour]])
+        # До выгрузки flows.csv дробные значения не округляем.
+        values = list(departures.values()) + list(arrivals.values())
+        if any(not math.isfinite(x) or x < 0 for x in values):
+            raise ValueError(f"Некорректный спрос за {name}")
+        if not math.isclose(math.fsum(departures.values()),
+                            math.fsum(arrivals.values()), rel_tol=1e-9):
+            raise ValueError(f"Не сходится баланс за {name}")
+        periods[name] = {"departures": departures, "arrivals": arrivals}
+    return periods
 
-    departures = {}
-    arrivals = {}
-    total_in = 0
-    total_out = 0
 
-    for gate, flows in GATEWAYS.items():
-        out_flow = flows["OUT"]
-        in_flow = flows["IN"]
-        if isinstance(out_flow, str):
-            out_flow = calibration[out_flow]
-            in_flow = calibration[in_flow]
-        departures[gate] = half(in_flow[hour])
-        arrivals[gate] = half(out_flow[hour])
-        total_in += departures[gate]
-        total_out += arrivals[gate]
+def main():
+    periods = build_periods()
+    PROCESSED_DIR.mkdir(exist_ok=True, parents=True)
+    (PROCESSED_DIR / "periods.json").write_text(
+        json.dumps(periods, ensure_ascii=False, indent=2, allow_nan=False) + "\n",
+        encoding="utf-8",
+    )
+    for name, demand in periods.items():
+        print(name, "отправления:", round(math.fsum(demand["departures"].values()), 3),
+              "прибытия:", round(math.fsum(demand["arrivals"].values()), 3))
 
-    all_departures = internal + total_out
-    all_arrivals = internal + total_in
-    for zone, res_share, work_share in zones: #вообще это пока самый важный кусок кода по распределению
-        departures[zone] = all_departures * res_share / sum_res
-        arrivals[zone] = all_arrivals * work_share / sum_work
 
-    # Округляем до сотых
-    departures = {k: round(v, 2) for k, v in departures.items()}
-    arrivals = {k: round(v, 2) for k, v in arrivals.items()}
-    periods[name] = {"departures": departures, "arrivals": arrivals}
-
-with (PROCESSED_DIR / "periods.json").open("w", encoding="utf-8") as f:
-    json.dump(periods, f, ensure_ascii=False, indent=2)
-
-print("Готово: periods.json")
-for name, p in periods.items():
-    print(name, "отправления:", round(sum(p["departures"].values()), 1),
-          "прибытия:", round(sum(p["arrivals"].values()), 1))
+if __name__ == "__main__":
+    main()
